@@ -1,6 +1,6 @@
 {
   "name": "@industry-theme/localhost-panels",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An embedded browser panel for viewing localhost development servers in Electron applications",
   "type": "module",
   "main": "dist/panels.bundle.js",
@@ -61,7 +61,8 @@
     "@principal-ade/panel-framework-core": "^0.1.5",
     "@principal-ade/utcp-panel-event": "^0.1.0",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.552.0"
+    "lucide-react": "^0.552.0",
+    "react-grab": "^0.0.59"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.3",

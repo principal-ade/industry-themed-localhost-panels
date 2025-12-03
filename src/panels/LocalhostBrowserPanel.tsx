@@ -6,8 +6,11 @@ import {
   ArrowRight,
   ExternalLink,
   Globe,
+  Bug,
+  Crosshair,
 } from 'lucide-react';
 import type { PanelComponentProps } from '../types';
+import reactGrabScript from 'react-grab/dist/index.global.js?raw';
 
 export interface RunningServer {
   port: number;
@@ -24,6 +27,10 @@ interface WebviewElement extends HTMLElement {
   canGoForward: () => boolean;
   goBack: () => void;
   goForward: () => void;
+  openDevTools: () => void;
+  isDevToolsOpened: () => boolean;
+  closeDevTools: () => void;
+  executeJavaScript: (code: string) => Promise<unknown>;
   addEventListener: (event: string, listener: (event: Event) => void) => void;
   removeEventListener: (
     event: string,
@@ -65,6 +72,10 @@ const LocalhostBrowserPanelContent: React.FC<
 
   // Running servers provided by host
   const [runningServers, setRunningServers] = useState<RunningServer[]>([]);
+
+  // React Grab element inspector
+  const [reactGrabEnabled, setReactGrabEnabled] = useState(false);
+  const [reactGrabInjected, setReactGrabInjected] = useState(false);
 
   const localhostUrl = port ? `http://localhost:${port}${path}` : '';
 
@@ -166,6 +177,46 @@ const LocalhostBrowserPanelContent: React.FC<
     };
   }, []);
 
+  // Inject react-grab into the webview when enabled
+  useEffect(() => {
+    const webview = webviewRef.current;
+    if (!webview) return;
+
+    const injectReactGrab = async () => {
+      if (!reactGrabEnabled) return;
+
+      try {
+        await webview.executeJavaScript(`
+          (function() {
+            if (window.__REACT_GRAB__) return;
+            ${reactGrabScript}
+          })();
+        `);
+        setReactGrabInjected(true);
+      } catch (err) {
+        console.error('Failed to inject react-grab:', err);
+      }
+    };
+
+    const handleDidFinishLoad = () => {
+      setReactGrabInjected(false);
+      if (reactGrabEnabled) {
+        injectReactGrab();
+      }
+    };
+
+    webview.addEventListener('did-finish-load', handleDidFinishLoad);
+
+    // If already loaded and enabled, inject now
+    if (reactGrabEnabled && !reactGrabInjected) {
+      injectReactGrab();
+    }
+
+    return () => {
+      webview.removeEventListener('did-finish-load', handleDidFinishLoad);
+    };
+  }, [reactGrabEnabled, reactGrabInjected]);
+
   const handleReload = () => {
     webviewRef.current?.reload();
   };
@@ -202,6 +253,16 @@ const LocalhostBrowserPanelContent: React.FC<
     setPort(null);
     setPortInput('3000');
     setLoadError(null);
+  };
+
+  const handleOpenDevTools = () => {
+    if (typeof webviewRef.current?.openDevTools === 'function') {
+      webviewRef.current.openDevTools();
+    }
+  };
+
+  const handleToggleReactGrab = () => {
+    setReactGrabEnabled((prev) => !prev);
   };
 
   // Show port input form if no port is set
@@ -490,6 +551,50 @@ const LocalhostBrowserPanelContent: React.FC<
           title="Open in external browser"
         >
           <ExternalLink size={16} />
+        </button>
+
+        {/* Open DevTools */}
+        <button
+          onClick={handleOpenDevTools}
+          style={{
+            padding: '6px',
+            backgroundColor: theme.colors.background,
+            border: `1px solid ${theme.colors.border}`,
+            borderRadius: theme.radii[1],
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            color: theme.colors.text,
+          }}
+          title="Open DevTools"
+        >
+          <Bug size={16} />
+        </button>
+
+        {/* React Grab toggle */}
+        <button
+          onClick={handleToggleReactGrab}
+          style={{
+            padding: '6px',
+            backgroundColor: reactGrabEnabled
+              ? theme.colors.primary
+              : theme.colors.background,
+            border: `1px solid ${reactGrabEnabled ? theme.colors.primary : theme.colors.border}`,
+            borderRadius: theme.radii[1],
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            color: reactGrabEnabled
+              ? theme.colors.background
+              : theme.colors.text,
+          }}
+          title={
+            reactGrabEnabled
+              ? 'Disable React Grab (Cmd+C to select elements)'
+              : 'Enable React Grab element inspector'
+          }
+        >
+          <Crosshair size={16} />
         </button>
 
         {/* Change port button */}
