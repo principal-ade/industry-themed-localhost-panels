@@ -1,5 +1,5 @@
 {
-  "name": "@principal-ade/localhost-browser-panel",
+  "name": "@industry-theme/localhost-panels",
   "version": "0.1.0",
   "description": "An embedded browser panel for viewing localhost development servers in Electron applications",
   "type": "module",
@@ -98,6 +98,6 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/principal-ade/localhost-browser-panel.git"
+    "url": "git+https://github.com/principal-ade/industry-themed-localhost-panels.git"
   }
 }

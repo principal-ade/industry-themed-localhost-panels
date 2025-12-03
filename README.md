@@ -13,9 +13,9 @@ An embedded browser panel for viewing localhost development servers in Electron 
 ## Installation
 
 ```bash
-bun add @principal-ade/localhost-browser-panel
+bun add @industry-theme/localhost-panels
 # or
-npm install @principal-ade/localhost-browser-panel
+npm install @industry-theme/localhost-panels
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ npm install @principal-ade/localhost-browser-panel
 ### In a Panel Host Application
 
 ```tsx
-import { panels } from '@principal-ade/localhost-browser-panel';
+import { panels } from '@industry-theme/localhost-panels';
 
 // Register panels with your panel registry
 panelRegistry.registerPackage(panels);

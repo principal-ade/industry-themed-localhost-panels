@@ -59,7 +59,7 @@ export const onPackageUnload = async () => {
 
 /**
  * Export tools for server-safe imports.
- * Use '@principal-ade/localhost-browser-panel/tools' to import without React dependencies.
+ * Use '@industry-theme/localhost-panels/tools' to import without React dependencies.
  */
 export {
   localhostBrowserTools,
