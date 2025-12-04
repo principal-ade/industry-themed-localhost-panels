@@ -15,6 +15,14 @@ import reactGrabScript from 'react-grab/dist/index.global.js?raw';
 export interface RunningServer {
   port: number;
   label?: string;
+  /** Optional detected service type (e.g., 'vite', 'next', 'express') */
+  serviceType?: string;
+  /** Process ID of the server */
+  pid?: number;
+  /** Working directory where the process was started (project root) */
+  cwd?: string;
+  /** Command that started the process (e.g., 'node', 'npm') */
+  command?: string;
 }
 
 // Electron webview element interface
@@ -27,7 +35,7 @@ interface WebviewElement extends HTMLElement {
   canGoForward: () => boolean;
   goBack: () => void;
   goForward: () => void;
-  openDevTools: () => void;
+  openDevTools: (options?: { mode?: 'right' | 'bottom' | 'undocked' | 'detach' }) => void;
   isDevToolsOpened: () => boolean;
   closeDevTools: () => void;
   executeJavaScript: (code: string) => Promise<unknown>;
@@ -49,7 +57,7 @@ interface LocalhostBrowserPanelContentProps extends PanelComponentProps {
 const LocalhostBrowserPanelContent: React.FC<
   LocalhostBrowserPanelContentProps
 > = ({
-  context: _context,
+  context,
   actions: _actions,
   events,
   initialPort,
@@ -70,8 +78,26 @@ const LocalhostBrowserPanelContent: React.FC<
     initialPort?.toString() ?? '3000'
   );
 
-  // Running servers provided by host
-  const [runningServers, setRunningServers] = useState<RunningServer[]>([]);
+  // Running servers from context (provided by Electron app's PanelContext)
+  const runningServers = React.useMemo((): RunningServer[] => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctxAny = context as any;
+
+    // Check for direct localhostServers property (from ExtendedPanelContextValue)
+    if (Array.isArray(ctxAny?.localhostServers)) {
+      return ctxAny.localhostServers;
+    }
+
+    // Check via getSlice if available
+    if (typeof context?.getSlice === 'function') {
+      const slice = context.getSlice('localhostServers');
+      if (slice?.data && Array.isArray(slice.data)) {
+        return slice.data;
+      }
+    }
+
+    return [];
+  }, [context]);
 
   // React Grab element inspector
   const [reactGrabEnabled, setReactGrabEnabled] = useState(false);
@@ -113,17 +139,6 @@ const LocalhostBrowserPanelContent: React.FC<
           webviewRef.current.goForward();
         }
       }),
-
-      // Host: running servers update
-      events.on<{ servers: RunningServer[] }>(
-        'principal-ade.localhost-browser:servers-update',
-        (event) => {
-          const { servers } = event.payload || {};
-          if (servers) {
-            setRunningServers(servers);
-          }
-        }
-      ),
     ];
 
     return () => unsubscribers.forEach((unsub) => unsub());
@@ -257,7 +272,8 @@ const LocalhostBrowserPanelContent: React.FC<
 
   const handleOpenDevTools = () => {
     if (typeof webviewRef.current?.openDevTools === 'function') {
-      webviewRef.current.openDevTools();
+      // Dock devtools at bottom of the webview instead of separate window
+      webviewRef.current.openDevTools({ mode: 'bottom' });
     }
   };
 
@@ -341,7 +357,7 @@ const LocalhostBrowserPanelContent: React.FC<
               />
             </div>
 
-            {/* Running servers from host */}
+            {/* Running servers from context */}
             {runningServers.length > 0 && (
               <div style={{ marginBottom: '16px' }}>
                 <label
@@ -362,12 +378,12 @@ const LocalhostBrowserPanelContent: React.FC<
                     gap: '8px',
                   }}
                 >
-                  {runningServers.map(({ port: p, label }) => (
+                  {runningServers.map((server) => (
                     <button
-                      key={p}
+                      key={server.port}
                       type="button"
                       onClick={() => {
-                        setPort(p);
+                        setPort(server.port);
                         setPath('/');
                       }}
                       style={{
@@ -379,23 +395,57 @@ const LocalhostBrowserPanelContent: React.FC<
                         borderRadius: theme.radii[1],
                         cursor: 'pointer',
                         textAlign: 'left',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
                       }}
                     >
-                      <span style={{ fontFamily: theme.fonts.monospace }}>
-                        localhost:{p}
-                      </span>
-                      {label && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: theme.fontWeights.medium }}>
+                          {server.label || `localhost:${server.port}`}
+                        </span>
                         <span
                           style={{
                             fontSize: theme.fontSizes[1],
                             color: theme.colors.textSecondary,
+                            fontFamily: theme.fonts.monospace,
                           }}
                         >
-                          {label}
+                          :{server.port}
                         </span>
+                      </div>
+                      {(server.serviceType || server.cwd) && (
+                        <div
+                          style={{
+                            fontSize: theme.fontSizes[0],
+                            color: theme.colors.textTertiary,
+                            marginTop: '4px',
+                            display: 'flex',
+                            gap: '8px',
+                          }}
+                        >
+                          {server.serviceType && (
+                            <span
+                              style={{
+                                padding: '2px 6px',
+                                backgroundColor: theme.colors.backgroundSecondary,
+                                borderRadius: theme.radii[0],
+                              }}
+                            >
+                              {server.serviceType}
+                            </span>
+                          )}
+                          {server.cwd && (
+                            <span
+                              style={{
+                                fontFamily: theme.fonts.monospace,
+                                opacity: 0.7,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {server.cwd}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </button>
                   ))}

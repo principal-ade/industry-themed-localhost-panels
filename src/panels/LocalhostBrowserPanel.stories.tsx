@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useEffect } from 'react';
 import { LocalhostBrowserPanel, type RunningServer } from './LocalhostBrowserPanel';
 import {
   MockPanelProvider,
@@ -7,7 +6,6 @@ import {
   createMockActions,
   createMockEvents,
 } from '../mocks/panelContext';
-import type { PanelEventEmitter } from '../types';
 
 /**
  * LocalhostBrowserPanel provides an embedded browser for viewing localhost development servers.
@@ -96,43 +94,49 @@ export const NoRepository: Story = {
 };
 
 /**
- * With running servers - shows servers detected by the host
+ * With running servers - shows servers detected via context
  */
 export const WithRunningServers: Story = {
   render: () => {
-    const context = createMockContext();
-    const actions = createMockActions();
-    const events = createMockEvents();
-
     const mockServers: RunningServer[] = [
-      { port: 3000, label: 'React App' },
-      { port: 6006, label: 'Storybook' },
-      { port: 5173, label: 'Vite Dev Server' },
+      {
+        port: 3000,
+        label: 'my-react-app',
+        serviceType: 'react/next',
+        cwd: '/Users/developer/projects/my-react-app',
+        pid: 12345,
+        command: 'node',
+      },
+      {
+        port: 6006,
+        label: 'component-library',
+        serviceType: 'storybook',
+        cwd: '/Users/developer/projects/component-library',
+        pid: 12346,
+        command: 'node',
+      },
+      {
+        port: 5173,
+        label: 'vite-project',
+        serviceType: 'vite',
+        cwd: '/Users/developer/projects/vite-project',
+        pid: 12347,
+        command: 'node',
+      },
     ];
 
-    // Wrapper to emit servers after mount
-    const PanelWithServers = () => {
-      useEffect(() => {
-        // Simulate host sending running servers
-        setTimeout(() => {
-          (events as PanelEventEmitter).emit({
-            type: 'principal-ade.localhost-browser:servers-update',
-            source: 'host',
-            timestamp: Date.now(),
-            payload: { servers: mockServers },
-          });
-        }, 100);
-      }, []);
-
-      return (
-        <LocalhostBrowserPanel
-          context={context}
-          actions={actions}
-          events={events}
-        />
-      );
+    // Pass servers via context (simulating what Electron app provides)
+    const contextWithServers = {
+      ...createMockContext(),
+      localhostServers: mockServers,
     };
 
-    return <PanelWithServers />;
+    return (
+      <LocalhostBrowserPanel
+        context={contextWithServers}
+        actions={createMockActions()}
+        events={createMockEvents()}
+      />
+    );
   },
 };
