@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ThemeProvider, useTheme } from '@principal-ade/industry-theme';
+import { useTheme } from '@principal-ade/industry-theme';
 import {
   RefreshCw,
   ArrowLeft,
@@ -742,11 +742,8 @@ const LocalhostBrowserPanelContent: React.FC<
  * - Port and path configuration
  * - Quick port selection for common dev servers
  * - Tool integration for programmatic control
+ *
+ * Note: This component expects the host application to provide a ThemeProvider.
  */
-export const LocalhostBrowserPanel: React.FC<PanelComponentProps> = (props) => {
-  return (
-    <ThemeProvider>
-      <LocalhostBrowserPanelContent {...props} />
-    </ThemeProvider>
-  );
-};
+export const LocalhostBrowserPanel: React.FC<PanelComponentProps> =
+  LocalhostBrowserPanelContent;

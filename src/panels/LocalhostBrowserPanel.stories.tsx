@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { ThemeProvider } from '@principal-ade/industry-theme';
 import { LocalhostBrowserPanel, type RunningServer } from './LocalhostBrowserPanel';
 import {
   MockPanelProvider,
@@ -39,16 +40,18 @@ const meta = {
   tags: ['autodocs'],
   decorators: [
     (Story) => (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          background: '#f5f5f5',
-        }}
-      >
-        <Story />
-      </div>
+      <ThemeProvider>
+        <div
+          style={{
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#f5f5f5',
+          }}
+        >
+          <Story />
+        </div>
+      </ThemeProvider>
     ),
   ],
   args: {
